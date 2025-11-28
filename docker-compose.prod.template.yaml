@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/aleksioprime/demo-app:__VERSION__
+    image: ghcr.io/__OWNER__/__REPO__:__VERSION__
     container_name: demo-app
     restart: always
 

@@ -64,9 +64,13 @@ jobs:
       # Генерируем docker-compose для продакшна
       - name: Generate production compose
         run: |
-          sed "s/__VERSION__/${{ steps.vars.outputs.timestamp }}/g" \
+          OWNER="${{ github.repository_owner }}"
+          REPO="${{ github.event.repository.name }}"
+          VERSION="${{ steps.vars.outputs.timestamp }}"
+
+          sed "s~__OWNER__~$OWNER~g; s~__REPO__~$REPO~g; s~__VERSION__~$VERSION~g" \
             /tmp/docker-compose.prod.template.yaml \
-              > docker-compose.prod.yaml
+            > docker-compose.prod.yaml
 
       # Коммитим и пушим docker-compose.prod.yaml в ветку production
       - name: Commit compose update
