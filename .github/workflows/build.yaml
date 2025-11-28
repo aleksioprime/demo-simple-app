@@ -1,0 +1,75 @@
+name: Build and Push to GHCR
+
+# Пайплайн запускается при любом push в ветку main
+on:
+  push:
+    branches:
+      - main
+
+# Даём GitHub Actions разрешение на запись в репозиторий
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Загружаем исходный код из ветки main
+      - name: Checkout main branch
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # Генерируем уникальную версию образа
+      - name: Generate version tag
+        id: vars
+        run: echo "timestamp=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+
+      # Логинимся в GHCR через GitHub Actions
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: aleksioprime
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      # Сборка Docker-образа (два тега: latest и уникальный timestamp)
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ghcr.io/aleksioprime/demo-app:latest \
+            -t ghcr.io/aleksioprime/demo-app:${{ steps.vars.outputs.timestamp }} \
+            -f app/Dockerfile \
+            ./app
+
+      # Пушим образы в GHCR (latest перезаписывается, timestamp уникален)
+      - name: Push Docker images
+        run: |
+          docker push ghcr.io/aleksioprime/demo-app:latest
+          docker push ghcr.io/aleksioprime/demo-app:${{ steps.vars.outputs.timestamp }}
+
+      # Сохраняем шаблон compose-прода до переключения ветки
+      - name: Save compose template
+        run: cp docker-compose.prod.template.yaml /tmp/docker-compose.prod.template.yaml
+
+      # Переключаемся на ветку production
+      - name: Checkout production
+        run: |
+          git fetch origin production
+          git checkout production
+
+      # Генерируем docker-compose для продакшна
+      - name: Generate production compose
+        run: |
+          sed "s/__VERSION__/${{ steps.vars.outputs.timestamp }}/g" \
+            /tmp/docker-compose.prod.template.yaml \
+              > docker-compose.prod.yaml
+
+      # Коммитим и пушим docker-compose.prod.yaml в ветку production
+      - name: Commit compose update
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Release ${{ steps.vars.outputs.timestamp }}"
+          file_pattern: docker-compose.prod.yaml
+          branch: production
