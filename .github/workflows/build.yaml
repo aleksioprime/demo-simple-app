@@ -37,17 +37,19 @@ jobs:
       # Сборка Docker-образа (два тега: latest и уникальный timestamp)
       - name: Build Docker image
         run: |
+          IMAGE="ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}"
           docker build \
-            -t ghcr.io/aleksioprime/demo-app:latest \
-            -t ghcr.io/aleksioprime/demo-app:${{ steps.vars.outputs.timestamp }} \
+            -t $IMAGE:latest \
+            -t $IMAGE:${{ steps.vars.outputs.timestamp }} \
             -f app/Dockerfile \
             ./app
 
       # Пушим образы в GHCR (latest перезаписывается, timestamp уникален)
       - name: Push Docker images
         run: |
-          docker push ghcr.io/aleksioprime/demo-app:latest
-          docker push ghcr.io/aleksioprime/demo-app:${{ steps.vars.outputs.timestamp }}
+          IMAGE="ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}"
+          docker push $IMAGE:latest
+          docker push $IMAGE:${{ steps.vars.outputs.timestamp }}
 
       # Сохраняем шаблон compose-прода до переключения ветки
       - name: Save compose template
