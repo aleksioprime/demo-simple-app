@@ -1,8 +1,13 @@
+x-app: &app
+  env_file:
+    - stack.env
+  restart: unless-stopped
+
 services:
   app:
-    image: ghcr.io/aleksioprime/demo-simple-app:20251128-175055
+    image: ghcr.io/aleksioprime/demo-simple-app:20251209-141945
     container_name: demo-app
-    restart: always
+    <<: *app
 
     labels:
       # Обязательно включить Traefik
@@ -10,12 +15,12 @@ services:
 
       # --- HTTPS ROUTER ---
       # Уникальный домен для приложения
-      - "traefik.http.routers.demo.rule=Host(`demo.aledemo.ru`)"
+      - "traefik.http.routers.demo.rule=Host(`demo.technocrew.ru`)"
       - "traefik.http.routers.demo.entrypoints=websecure"
       - "traefik.http.routers.demo.tls.certresolver=myresolver"
 
       # --- HTTP ROUTER (for redirect) ---
-      - "traefik.http.routers.demo-http.rule=Host(`demo.aledemo.ru`)"
+      - "traefik.http.routers.demo-http.rule=Host(`demo.technocrew.ru`)"
       - "traefik.http.routers.demo-http.entrypoints=web"
       - "traefik.http.routers.demo-http.middlewares=redirect-to-https"
 
